@@ -4,10 +4,10 @@ import com.zipcodewilmington.streams.tools.ReflectionUtils;
 import com.zipcodewilmington.streams.tools.logging.LoggerHandler;
 import com.zipcodewilmington.streams.tools.logging.LoggerWarehouse;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -36,7 +36,12 @@ public final class PersonWarehouse implements Iterable<Person> {
      * @return list of names of Person objects
      */ // TODO
     public List<String> getNames() {
-        return null;
+        //List<String> namesList = new ArrayList<>();
+
+        return people.stream()
+                //.map(Person::getName)
+                .map(P -> P.getName())
+                .collect(Collectors.toList());
     }
 
 
@@ -44,31 +49,56 @@ public final class PersonWarehouse implements Iterable<Person> {
      * @return list of uniquely named Person objects
      */ //TODO
     public Stream<Person> getUniquelyNamedPeople() {
-        return null;
+        //implementation of the helper method and solution Josh came up with during open house
+        //return people.stream().filter(P -> getOccurrences(P.getName()) == 1L);
+
+        //implementation of code I more or less copy/pasted from the internet. I have no idea how this shit works
+        return people.stream().filter(distinctByKey(P -> P.getName()));
     }
 
+    /**
+     *
+     * @param keyExtractor
+     * @param <T>
+     * @return returns a map with all the Person objects and their associated names
+     */
+    public <T>Predicate<T> distinctByKey(Function<? super T, Object> keyExtractor) {
+        Map<Object, Boolean> map = new ConcurrentHashMap<>();
+        return t -> map.putIfAbsent(keyExtractor.apply(t), Boolean.TRUE) == null;
+    }
+
+    /**
+     * helper function needed for the solution Josh came up with during open house
+     * @param name, name of person object being evaluated
+     * @return returns a Long representing the number of Person objects with that name associated
+     */
+    public Long getOccurrences(String name) {
+        System.out.println(people.stream().filter(person -> person.getName().equals(name)).count());
+        return people.stream().filter(P -> P.getName().equals(name)).count();
+    }
 
     /**
      * @param character starting character of Person objects' name
      * @return a Stream of respective
      */ //TODO
     public Stream<Person> getUniquelyNamedPeopleStartingWith(Character character) {
-        return null;
+        return getUniquelyNamedPeople().filter(P -> P.getName().charAt(0) == character);
     }
 
     /**
-     * @param n first `n` Person objects
+     * @param
      * @return a Stream of respective
      */ //TODO
     public Stream<Person> getFirstNUniquelyNamedPeople(int n) {
-        return null;
+        return getUniquelyNamedPeople().limit(n);
     }
 
     /**
      * @return a mapping of Person Id to the respective Person name
      */ // TODO
     public Map<Long, String> getIdToNameMap() {
-        return null;
+        return people.stream()
+                .collect(Collectors.toMap(Person::getPersonalId, Person::getName));
     }
 
 
@@ -76,7 +106,7 @@ public final class PersonWarehouse implements Iterable<Person> {
      * @return Stream of Stream of Aliases
      */ // TODO
     public Stream<Stream<String>> getNestedAliases() {
-        return null;
+        return Stream.of(people.stream().flatMap(Person -> Arrays.stream(Person.getAliases())));
     }
 
 
@@ -84,7 +114,7 @@ public final class PersonWarehouse implements Iterable<Person> {
      * @return Stream of all Aliases
      */ // TODO
     public Stream<String> getAllAliases() {
-        return null;
+        return people.stream().flatMap(Person -> Arrays.stream(Person.getAliases()));
     }
 
     // DO NOT MODIFY
